@@ -1,19 +1,31 @@
 #ifndef _PREDICTOR_H_
 #define _PREDICTOR_H_
 
-#include <bitset>
+#include <array>
 #include <stdlib.h>
 
+using bht_t = uint16_t;
+
 static const size_t MAX_SIZE = 192000;
-static const size_t SATURATION_BITS = 1;
+static const size_t SATURATION_BITS = 2;
 static const size_t BHT_SIZE = MAX_SIZE / SATURATION_BITS;
+static const bht_t SATURATION_VALUE = (1 << SATURATION_BITS) - 1;
+static const bht_t NOT_TAKEN_MAX = (1 << (SATURATION_BITS - 1)) - 1;
+
 class BHT {
     private:
-        std::bitset<BHT_SIZE> table;
+        std::array<bht_t, BHT_SIZE> table;
     public:
-        void setup() { table.reset(); }
-        bool predict(int idx) { return table[idx]; }
-        void update(int idx, bool val) { table.set(idx, val); }
+        void setup() {
+            table.fill(NOT_TAKEN_MAX);
+        }
+        bool predict(int idx) {
+            return table[idx] > NOT_TAKEN_MAX;
+        }
+        void update(int idx, bool val) {
+            if (val && table[idx] != SATURATION_VALUE) table[idx]++;
+            else if (!val && table[idx] != 0) table[idx]--;
+        }
 };
 
 /* Size of Predictor: 192 KB */
