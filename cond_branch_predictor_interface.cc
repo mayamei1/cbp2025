@@ -27,6 +27,7 @@
 // It can be used for arbitrary initialization steps for the contestant's code.
 //
 void beginCondDirPredictor() {
+    predictor.setup();
 }
 
 //
@@ -37,7 +38,7 @@ void beginCondDirPredictor() {
 // return value is the predicted direction. 
 //
 bool get_cond_dir_prediction(uint64_t seq_no, uint8_t piece, uint64_t pc, const uint64_t pred_cycle) {
-    return predictor.predict();
+    return predictor.predict(pc);
 }
 
 //
@@ -80,6 +81,11 @@ void notify_instr_execute_resolve(uint64_t seq_no, uint8_t piece, uint64_t pc, c
 //
 // For the sample predictor implementation, we do not leverage commit information
 void notify_instr_commit(uint64_t seq_no, uint8_t piece, uint64_t pc, const bool pred_dir, const ExecuteInfo& _exec_info, const uint64_t commit_cycle) {
+    bool should_update = is_br(_exec_info.dec_info.insn_class) && is_cond_br(_exec_info.dec_info.insn_class);
+    if (!should_update) return;
+
+    bool taken = _exec_info.taken.value();
+    predictor.update(pc, taken);
 }
 
 //
