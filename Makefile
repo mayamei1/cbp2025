@@ -54,3 +54,7 @@ cbp: $(OBJ) | lib
 clean:
 	rm -f *.o cbp
 	make -C lib clean
+
+run:
+	rm -rf ../results/
+	python3 scripts/trace_exec_training_list.py --trace_dir ../traces/small/ --results_dir ../results/
