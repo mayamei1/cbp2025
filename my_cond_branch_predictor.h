@@ -4,11 +4,11 @@
 #include <stdlib.h>
 
 /* Size of Predictor: 0 KB */
-class AlwaysBranchPredictor
+class AlwaysNotBranchPredictor
 {
     public:
         bool predict() {
-            return true;
+            return false;
         }
 };
 // =================
@@ -16,4 +16,4 @@ class AlwaysBranchPredictor
 // =================
 
 #endif
-static AlwaysBranchPredictor predictor;
+static AlwaysNotBranchPredictor predictor;
