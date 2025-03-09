@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 using bht_entry_t = uint16_t;
-using lbh_entry_t = uint16_t;
+using gbh_t = uint64_t;
 
 static const size_t MAX_SIZE = 192000;
 static const size_t SATURATION_BITS = 2;
@@ -13,9 +13,8 @@ static const size_t BRANCH_HISTORY_LENGTH = 1;
 
 /* MAX_SIZE = NUM_HISTORY_PATTERNS * NUM_BHT_ENTRIES * (BRANCH_HISTORY_LENGTH + SATURATION_BITS) */
 static const size_t NUM_HISTORY_PATTERNS = 1 << BRANCH_HISTORY_LENGTH;
-static const lbh_entry_t HISTORY_MASK = NUM_HISTORY_PATTERNS - 1;
-static const size_t NUM_BHT_ENTRIES = MAX_SIZE / ((BRANCH_HISTORY_LENGTH + SATURATION_BITS) * NUM_HISTORY_PATTERNS);
-
+static const gbh_t HISTORY_MASK = NUM_HISTORY_PATTERNS - 1;
+static const size_t NUM_BHT_ENTRIES = MAX_SIZE / (SATURATION_BITS * NUM_HISTORY_PATTERNS);
 static const bht_entry_t SATURATION_VALUE = (1 << SATURATION_BITS) - 1;
 static const bht_entry_t NOT_TAKEN_MAX = (1 << (SATURATION_BITS - 1)) - 1;
 
@@ -38,31 +37,24 @@ class BHT {
 
 class TwoLevelBHT {
     private:
-        /* NUM_BHT_ENTRIES * BRANCH_HISTORY_LENGTH */
-        std::array<lbh_entry_t, NUM_BHT_ENTRIES> LBH;
-        /* NUM_HISTORY_PATTERNS * NUM_BHT_ENTRIES * SATURATION_BITS */
+        gbh_t GBH;
         std::array<BHT, NUM_HISTORY_PATTERNS> BHTs;
     public:
         void setup() {
-            LBH.fill(0);
+            GBH = 0;
             for (BHT &b : BHTs) b.setup();
         }
         bool predict(int idx) {
-            return BHTs[LBH[idx]].predict(idx);
+            return BHTs[GBH].predict(idx);
         }
         void update(int idx, bool val) {
-            BHTs[LBH[idx]].update(idx, val);
-            LBH[idx] = ((LBH[idx] << 1) | val) & HISTORY_MASK;
+            BHTs[GBH].update(idx, val);
+            GBH = ((GBH << 1) | val) & HISTORY_MASK;
         }
 };
 
-/*
-====================================================================================================
-    Size of Predictor: 192 KB
-    NUM_HISTORY_PATTERNS * NUM_BHT_ENTRIES * (BRANCH_HISTORY_LENGTH + SATURATION_BITS)
-====================================================================================================
-*/
-class TwoLevelBranchPredictor
+/* Size of Predictor: 192 KB */
+class gselect
 {
     TwoLevelBHT bht;
     public:
@@ -82,4 +74,4 @@ class TwoLevelBranchPredictor
 // =================
 
 #endif
-static TwoLevelBranchPredictor predictor;
+static gselect predictor;
