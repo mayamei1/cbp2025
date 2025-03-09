@@ -9,7 +9,7 @@ using lbh_entry_t = uint16_t;
 
 static const size_t MAX_SIZE = 192000;
 static const size_t SATURATION_BITS = 2;
-static const size_t BRANCH_HISTORY_LENGTH = 3;
+static const size_t BRANCH_HISTORY_LENGTH = 1;
 
 static const size_t NUM_HISTORY_PATTERNS = 1 << BRANCH_HISTORY_LENGTH;
 static const lbh_entry_t HISTORY_MASK = NUM_HISTORY_PATTERNS - 1;
@@ -35,7 +35,7 @@ class BHT {
 
 class TwoLevelBHT {
     private:
-        std::array<lbh_entry_t, NUM_HISTORY_PATTERNS> LBH;
+        std::array<lbh_entry_t, NUM_BHT_ENTRIES> LBH;
         std::array<BHT, NUM_HISTORY_PATTERNS> BHTs;
     public:
         void setup() {
@@ -52,9 +52,9 @@ class TwoLevelBHT {
 };
 
 /* Size of Predictor: 192 KB */
-class BitSaturatingBranchPredictor
+class TwoLevelBranchPredictor
 {
-    BHT bht;
+    TwoLevelBHT bht;
     public:
         void setup() {
             bht.setup();
@@ -72,4 +72,4 @@ class BitSaturatingBranchPredictor
 // =================
 
 #endif
-static BitSaturatingBranchPredictor predictor;
+static TwoLevelBranchPredictor predictor;
