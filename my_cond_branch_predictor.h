@@ -11,14 +11,17 @@ static const size_t MAX_SIZE = 192000;
 static const size_t SATURATION_BITS = 2;
 static const size_t BRANCH_HISTORY_LENGTH = 3;
 
+/* MAX_SIZE = NUM_HISTORY_PATTERNS * NUM_BHT_ENTRIES * (BRANCH_HISTORY_LENGTH + SATURATION_BITS) */
 static const size_t NUM_HISTORY_PATTERNS = 1 << BRANCH_HISTORY_LENGTH;
 static const lbh_entry_t HISTORY_MASK = NUM_HISTORY_PATTERNS - 1;
-static const size_t NUM_BHT_ENTRIES = MAX_SIZE / (SATURATION_BITS * NUM_HISTORY_PATTERNS);
+static const size_t NUM_BHT_ENTRIES = MAX_SIZE / ((BRANCH_HISTORY_LENGTH + SATURATION_BITS) * NUM_HISTORY_PATTERNS);
+
 static const bht_entry_t SATURATION_VALUE = (1 << SATURATION_BITS) - 1;
 static const bht_entry_t NOT_TAKEN_MAX = (1 << (SATURATION_BITS - 1)) - 1;
 
 class BHT {
     private:
+        /* NUM_BHT_ENTRIES * SATURATION_BITS */
         std::array<bht_entry_t, NUM_BHT_ENTRIES> table;
     public:
         void setup() {
@@ -35,7 +38,9 @@ class BHT {
 
 class TwoLevelBHT {
     private:
+        /* NUM_BHT_ENTRIES * BRANCH_HISTORY_LENGTH */
         std::array<lbh_entry_t, NUM_BHT_ENTRIES> LBH;
+        /* NUM_HISTORY_PATTERNS * NUM_BHT_ENTRIES * SATURATION_BITS */
         std::array<BHT, NUM_HISTORY_PATTERNS> BHTs;
     public:
         void setup() {
@@ -51,7 +56,12 @@ class TwoLevelBHT {
         }
 };
 
-/* Size of Predictor: 192 KB */
+/*
+====================================================================================================
+    Size of Predictor: 192 KB
+    NUM_HISTORY_PATTERNS * NUM_BHT_ENTRIES * (BRANCH_HISTORY_LENGTH + SATURATION_BITS)
+====================================================================================================
+*/
 class TwoLevelBranchPredictor
 {
     TwoLevelBHT bht;
