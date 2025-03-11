@@ -26,11 +26,11 @@ class BitSaturatingBranchPredictor
         }
 
         bool predict(uint64_t pc) {
-            return bht.predict(pc % BHT_SIZE);
+            return bht.predict((pc >> 2) % BHT_SIZE);
         }
 
         void update(uint64_t pc, bool taken) {
-            bht.update(pc % BHT_SIZE, taken);
+            bht.update((pc >> 2) % BHT_SIZE, taken);
         }
 };
 // =================
