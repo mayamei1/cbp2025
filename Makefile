@@ -29,7 +29,7 @@ FLAGS = -std=c++17 -L./lib $(LIBS) $(OPT)
 CPPFLAGS = -std=c++17 $(OPT)
 
 OBJ = cond_branch_predictor_interface.o my_cond_branch_predictor.o
-DEPS = cbp.h cond_branch_predictor_interface.h my_cond_branch_predictor.h
+DEPS = cbp.h my_cond_branch_predictor.h
 
 DEBUG=0
 ifeq ($(DEBUG), 1)
@@ -54,7 +54,3 @@ cbp: $(OBJ) | lib
 clean:
 	rm -f *.o cbp
 	make -C lib clean
-
-run:
-	rm -rf ../results/
-	python3 scripts/trace_exec_training_list.py --trace_dir ../traces/small/ --results_dir ../results/
