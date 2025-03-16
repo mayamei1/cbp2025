@@ -41,7 +41,7 @@ void beginCondDirPredictor()
 //
 bool get_cond_dir_prediction(uint64_t seq_no, uint8_t piece, uint64_t pc, const uint64_t pred_cycle)
 {
-    const bool my_prediction = cond_predictor_impl.predict(pc);
+    const bool my_prediction = cond_predictor_impl.predict(seq_no, piece, pc);
     return my_prediction;
 }
 
@@ -55,6 +55,7 @@ bool get_cond_dir_prediction(uint64_t seq_no, uint8_t piece, uint64_t pc, const 
 //
 void spec_update(uint64_t seq_no, uint8_t piece, uint64_t pc, InstClass inst_class, const bool resolve_dir, const bool pred_dir, const uint64_t next_pc)
 {
+    cond_predictor_impl.spec_fix(seq_no, piece, pc, pred_dir, resolve_dir);
 }
 
 //
@@ -78,11 +79,9 @@ void notify_instr_decode(uint64_t seq_no, uint8_t piece, uint64_t pc, const Deco
 // At the moment, we do not consider updating any other structure, but the contestants are allowed to  update any other predictor state.
 void notify_instr_execute_resolve(uint64_t seq_no, uint8_t piece, uint64_t pc, const bool pred_dir, const ExecuteInfo& _exec_info, const uint64_t execute_cycle)
 {
-    bool is_cond_branch = is_br(_exec_info.dec_info.insn_class) && is_cond_br(_exec_info.dec_info.insn_class);
-    if (is_cond_branch) {
-        const bool taken = _exec_info.taken.value();
-        cond_predictor_impl.update(pc, taken);
-    }
+    if (!is_cond_br(_exec_info.dec_info.insn_class)) return;
+    bool taken = _exec_info.taken.value();
+    cond_predictor_impl.update(seq_no, piece, pc, taken);
 }
 
 //
@@ -94,6 +93,8 @@ void notify_instr_execute_resolve(uint64_t seq_no, uint8_t piece, uint64_t pc, c
 // For the sample predictor implementation, we do not leverage commit information
 void notify_instr_commit(uint64_t seq_no, uint8_t piece, uint64_t pc, const bool pred_dir, const ExecuteInfo& _exec_info, const uint64_t commit_cycle)
 {
+    if (!is_cond_br(_exec_info.dec_info.insn_class)) return;
+    cond_predictor_impl.commit();
 }
 
 //
