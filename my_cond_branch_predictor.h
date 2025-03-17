@@ -11,7 +11,7 @@
 #endif
 
 #ifndef NUM_BHR_INDEX_BITS
-#define NUM_BHR_INDEX_BITS 11
+#define NUM_BHR_INDEX_BITS 16
 #endif
 
 #ifndef NUM_SATURATION_BITS
@@ -19,7 +19,7 @@
 #endif
 
 #ifndef BRANCH_HISTORY_LENGTH
-#define BRANCH_HISTORY_LENGTH 4
+#define BRANCH_HISTORY_LENGTH 12
 #endif
 
 #define BHR_SIZE (1 << NUM_BHR_INDEX_BITS)
@@ -30,7 +30,7 @@
 #define BRANCH_HISTORY_MASK (BRANCH_HISTORY_SIZE - 1)
 
 #define OBQ_SIZE 1024
-#define OBQ_INDEX_BITS 10
+#define NUM_OBQ_INDEX_BITS 10
 
 using branch_hist_t = uint16_t;
 
@@ -71,8 +71,8 @@ template<typename T, std::size_t size> class cbuffer {
 
 class MyPredictor {
     private:
-    std::array<std::array<uint8_t, BHR_SIZE>, BRANCH_HISTORY_SIZE> bhr;
-    std::array<branch_hist_t, BHR_SIZE> lbh;
+    std::array<uint8_t, BHR_SIZE> bhr;
+    branch_hist_t gbh;
 
     cbuffer<branch_hist_t, OBQ_SIZE> obq;
     std::map<uint64_t, int> obq_id;
@@ -81,8 +81,9 @@ class MyPredictor {
         return (seq_no << 4) | (piece & 0x000F);
     }
 
-    int get_index(uint64_t pc) {
-        return (pc >> 2) & BHR_INDEX_MASK;
+    int get_index(uint64_t pc, branch_hist_t bh) {
+        // (PC mod BHR size) XOR (Left-aligned GBH)
+        return ((pc >> 2) & BHR_INDEX_MASK) ^ (bh << (NUM_BHR_INDEX_BITS - BRANCH_HISTORY_LENGTH));
     }
 
     void update_hist(branch_hist_t &bh, bool taken) {
@@ -92,27 +93,27 @@ class MyPredictor {
     public:
     void setup() {
         // Check # of bits used
-        int bhr_count = BRANCH_HISTORY_SIZE * BHR_SIZE * NUM_SATURATION_BITS;
-        int lbh_count = BHR_SIZE * BRANCH_HISTORY_LENGTH;
-        int obq_count = OBQ_SIZE * BRANCH_HISTORY_LENGTH + OBQ_INDEX_BITS;
-        assert((bhr_count + lbh_count + obq_count) <= MAX_PRED_BITS);
+        int bhr_count = BHR_SIZE * NUM_SATURATION_BITS;
+        int gbh_count = BRANCH_HISTORY_LENGTH;
+        int obq_count = OBQ_SIZE * BRANCH_HISTORY_LENGTH + NUM_OBQ_INDEX_BITS;
+        assert((bhr_count + gbh_count + obq_count) <= MAX_PRED_BITS);
         
         // BHR initialization
-        for (auto b : bhr) b.fill(MAX_NOT_TAKEN);
+        bhr.fill(MAX_NOT_TAKEN);
+        gbh = 0;
     }
 
     bool predict(uint64_t seq_no, uint8_t piece, uint64_t pc) {
         // Calculate index
-        int bhr_index = get_index(pc);
+        int bhr_index = get_index(pc, gbh);
         int inst_id = get_unique_inst_id(seq_no, piece);
 
-        uint16_t &br_hist = lbh[bhr_index];
         // Store old branch history to OBQ
-        obq_id[inst_id] = obq.push(br_hist);
+        obq_id[inst_id] = obq.push(gbh);
         // Get prediction
-        bool pred = bhr[br_hist][bhr_index] > MAX_NOT_TAKEN;
+        bool pred = bhr[bhr_index] > MAX_NOT_TAKEN;
         // Speculatively update branch history
-        update_hist(br_hist, pred);
+        update_hist(gbh, pred);
         
         return pred;
     }
@@ -121,25 +122,23 @@ class MyPredictor {
         // Fixup only if incorrect prediction
         if (pred_dir == resolve_dir) return;
         // Calculate index/get OBQ index from pipeline
-        int bhr_index = get_index(pc);
         int inst_id = get_unique_inst_id(seq_no, piece);
         int obq_index = obq_id[inst_id];
 
         // Fix branch history
-        uint16_t &br_hist = lbh[bhr_index];
-        br_hist = obq.set_tail(obq_index);
-        update_hist(br_hist, resolve_dir);
+        gbh = obq.set_tail(obq_index);
+        update_hist(gbh, resolve_dir);
     }
 
     void update(uint64_t seq_no, uint8_t piece, uint64_t pc, bool taken) {
         // Calculate index
-        int bhr_index = get_index(pc);
         int inst_id = get_unique_inst_id(seq_no, piece);
         int obq_index = obq_id[inst_id];
         // Get branch history right before this branch
-        uint16_t br_hist = obq.at(obq_index);
+        branch_hist_t br_hist = obq.at(obq_index);
+        int bhr_index = get_index(pc, br_hist);
         // Increment/decrement with saturation
-        uint8_t &counter = bhr[br_hist][bhr_index];
+        uint8_t &counter = bhr[bhr_index];
         if (taken && counter != MAX_SATURATION_VALUE) counter++;
         else if (!taken && counter != 0) counter--;
     }
