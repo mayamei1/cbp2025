@@ -25,7 +25,7 @@ CC = g++
 OPT = -O3
 LIBS = -lcbp -lz
 #FLAGS = -std=c++11 -L./lib $(LIBS) $(OPT)
-FLAGS = -std=c++17 -L./lib $(LIBS) $(OPT) $(CUSTOM)
+FLAGS = -std=c++17 -L./lib $(LIBS) $(OPT) $(CUSTOM_FLAGS)
 CPPFLAGS = -std=c++17 $(OPT)
 
 OBJ = cond_branch_predictor_interface.o my_cond_branch_predictor.o

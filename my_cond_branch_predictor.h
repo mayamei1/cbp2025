@@ -19,7 +19,7 @@
 #endif
 
 #ifndef BRANCH_HISTORY_LENGTH
-#define BRANCH_HISTORY_LENGTH 4
+#define BRANCH_HISTORY_LENGTH 12
 #endif
 
 #define BHR_SIZE (1 << NUM_BHR_INDEX_BITS)
@@ -95,6 +95,7 @@ class MyPredictor {
         // Check # of bits used
         int bhr_count = BHR_SIZE * NUM_SATURATION_BITS;
         int gbh_count = BRANCH_HISTORY_LENGTH;
+        // OBQ can be implemented via keeping the branch history in the instruction payload
         int obq_count = OBQ_SIZE * BRANCH_HISTORY_LENGTH + NUM_OBQ_INDEX_BITS;
         assert((bhr_count + gbh_count + obq_count) <= MAX_PRED_BITS);
         
