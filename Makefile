@@ -25,7 +25,7 @@ CC = g++
 OPT = -O3
 LIBS = -lcbp -lz
 #FLAGS = -std=c++11 -L./lib $(LIBS) $(OPT)
-FLAGS = -std=c++17 -L./lib $(LIBS) $(OPT)
+FLAGS = -std=c++17 -L./lib $(LIBS) $(OPT) $(CUSTOM)
 CPPFLAGS = -std=c++17 $(OPT)
 
 OBJ = cond_branch_predictor_interface.o my_cond_branch_predictor.o
@@ -39,7 +39,7 @@ endif
 
 .PHONY: clean lib
 
-all: cbp
+all: clean cbp
 
 lib:
 	make -C $@ DEBUG=$(DEBUG)
@@ -49,7 +49,6 @@ cbp: $(OBJ) | lib
 
 %.o: %.cc $(DEPS)
 	$(CC) $(FLAGS) -c -o $@ $<
-
 
 clean:
 	rm -f *.o cbp

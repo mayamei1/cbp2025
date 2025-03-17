@@ -19,7 +19,7 @@
 #endif
 
 #ifndef BRANCH_HISTORY_LENGTH
-#define BRANCH_HISTORY_LENGTH 12
+#define BRANCH_HISTORY_LENGTH 4
 #endif
 
 #define BHR_SIZE (1 << NUM_BHR_INDEX_BITS)
@@ -101,6 +101,8 @@ class MyPredictor {
         // BHR initialization
         bhr.fill(MAX_NOT_TAKEN);
         gbh = 0;
+
+        printf("%d\n", BRANCH_HISTORY_LENGTH);
     }
 
     bool predict(uint64_t seq_no, uint8_t piece, uint64_t pc) {
