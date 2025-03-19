@@ -67,6 +67,9 @@ void spec_update(uint64_t seq_no, uint8_t piece, uint64_t pc, InstClass inst_cla
 // For the sample predictor implementation, we do not leverage decode information
 void notify_instr_decode(uint64_t seq_no, uint8_t piece, uint64_t pc, const DecodeInfo& _decode_info, const uint64_t decode_cycle)
 {
+    if (!is_br(_decode_info.insn_class)) return;
+    if (is_cond_br(_decode_info.insn_class)) return;
+    cond_predictor_impl.update_on_unconditional();
 }
 
 //
